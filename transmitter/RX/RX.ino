@@ -15,7 +15,7 @@ RF24 radio(PIN_CE, PIN_CSN);
 
 Nrf24Payload rx_payload = Nrf24Payload();
 
-// Small ack payload for speed
+// Small (4 bytes) ack payload for speed
 typedef struct{
   uint16_t key;
   uint16_t val;
@@ -37,9 +37,16 @@ void setup()
    
   radio.begin();
   radio.setChannel(80);
+  // For the slower data rate (further range) see https://github.com/TMRh20/RF24/issues/98
+  radio.setDataRate(RF24_250KBPS);
   radio.setAutoAck(1);
   radio.enableAckPayload();
-  radio.setRetries(0,4);
+  
+  // How long to wait between each retry, in multiples of 250us,
+  // max is 15.  0 means 250us, 15 means 4000us.
+  // count How many retries before giving up, max 15
+  // 3 * 250 = 750 = time required for an 8 byte ack
+  radio.setRetries(3,4);
   radio.setPayloadSize(sizeof(ack_t));
 
   radio.openWritingPipe(pipe_rx);        
