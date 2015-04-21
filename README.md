@@ -1,2 +1,3 @@
-# quadcopter
-NRF24 controlled multiwii Hubsan X4
+# Quadcopter
+
+Experiments with using Arduino Pro Minis with Multiwii and NRf24 radio modules.
