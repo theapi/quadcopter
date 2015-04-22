@@ -7,18 +7,17 @@
  * Uses the Optimized fork of nRF24L01 for Arduino and Raspberry Pi 
  * https://github.com/TMRh20/RF24
  *
- * and my Nrf24Payload library
- * https://github.com/theapi/nrf24/tree/master/Nrf24Payload
  */
-
-#define RX_ADDRESS "001RX"
-#define TX_ADDRESS "001TX"
 
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
 #include "printf.h"
-#include <Nrf24Payload.h>
+
+#define DEBUG 1
+
+#define RX_ADDRESS "001RX"
+#define TX_ADDRESS "001TX"
 
 #define PIN_CE  7
 #define PIN_CSN 8
@@ -28,11 +27,19 @@
 #define PIN_PITCH    A2
 #define PIN_ROLL     A3
 
-#define DEVICE_ID 'T'
-
 RF24 radio(PIN_CE, PIN_CSN);
 
-Nrf24Payload tx_payload = Nrf24Payload();
+typedef struct{
+  byte throttle;
+  byte yaw;
+  byte pitch;
+  byte roll;
+  byte dial1;
+  byte dial2;
+  byte switches; // bitflag
+}
+tx_t;
+tx_t tx_payload;
 
 // Small ack payload for speed
 typedef struct{
@@ -42,21 +49,39 @@ typedef struct{
 ack_t;
 ack_t ack_payload;
 
-//uint16_t msg_id = 0;
 
 byte pipe_tx[6] = TX_ADDRESS;
 byte pipe_rx[6] = RX_ADDRESS;
 
-byte counter = 1;
+unsigned long ppsLast = 0;
+int ppsCounter = 0;
+int pps = 0;
+
+void resetPayload() 
+{
+  tx_payload.throttle = 0;
+  tx_payload.yaw = 127;
+  tx_payload.pitch = 127;
+  tx_payload.roll = 127;
+  tx_payload.dial1 = 0;
+  tx_payload.dial2 = 0;
+  tx_payload.switches = 0;
+}
 
 void setup() 
 {
-  Serial.begin(57600);
-  printf_begin();
-  Serial.println("Begin");
-    
+  if (DEBUG) {
+    Serial.begin(57600);
+    printf_begin();
+    Serial.println("Begin");
+  }
+   
+  resetPayload();
+   
   radio.begin();
   radio.setChannel(80);
+  radio.setPayloadSize(sizeof(tx_t));
+  
   // For the slower data rate (further range) see https://github.com/TMRh20/RF24/issues/98
   radio.setDataRate(RF24_250KBPS);
   radio.setAutoAck(1);
@@ -66,56 +91,85 @@ void setup()
   // max is 15.  0 means 250us, 15 means 4000us.
   // count How many retries before giving up, max 15
   // 3 * 250 = 750 = time required for an 8 byte ack
-  radio.setRetries(3,4);
-  radio.setPayloadSize(sizeof(ack_t));
+  radio.setRetries(3, 1);
   
   radio.openWritingPipe(pipe_tx);
   radio.openReadingPipe(1, pipe_rx);
   
-  // Dump the configuration of the rf unit for debugging
-  radio.printDetails();                   
+  if (DEBUG) {
+    // Dump the configuration of the rf unit for debugging
+    radio.printDetails();   
+    Serial.println("End begin");
+  }
   
   radio.startListening();
- 
-  tx_payload.setId(0);
-  tx_payload.setType('T');
-  
-  Serial.println("End begin");
 }
+
+
+/****************************************************************************/
+
+// Returns a corrected value for a joystick position that takes into account
+// the values of the outer extents and the middle of the joystick range.
+int joystickMapValues(int val, int lower, int middle, int upper, bool reverse)
+{
+  val = constrain(val, lower, upper);
+  if ( val < middle )
+    val = map(val, lower, middle, 0, 128);
+  else
+    val = map(val, middle, upper, 128, 255);
+  return ( reverse ? 255 - val : val );
+}
+
+/****************************************************************************/
+
 
 void loop(void)
 {
-  tx_payload.setId(tx_payload.getId() + 1);
-  tx_payload.setA(tx_payload.getA() + 1);
+
+  tx_payload.throttle = joystickMapValues( analogRead(PIN_THROTTLE), 100, 500, 900, false );
+  tx_payload.yaw      = joystickMapValues( analogRead(PIN_YAW), 100, 500, 900, false );
+  tx_payload.pitch    = joystickMapValues( analogRead(PIN_PITCH), 100, 500, 900, false );
+  tx_payload.roll     = joystickMapValues( analogRead(PIN_ROLL), 100, 500, 900, false );
    
+  printf("Now sending throttle %d\n\r ",tx_payload.throttle);
+  
   // Stop listening so we can talk.
   radio.stopListening();                                  
         
-  printf("Now sending %d as payload.\n\r ",tx_payload.getId());
-
   // Take the time, and send it.  This will block until complete 
   unsigned long time = micros();  
-  if (!radio.write( &tx_payload, Nrf24Payload_SIZE)) {
+  if (!radio.write( &tx_payload, sizeof(tx_t))) {
     // Got no ack.
-    printf("no ack.\n\r"); 
+    if (DEBUG) {
+      printf("no ack.\n\r"); 
+    }
   } else {
      if (!radio.available()) { 
        // blank payload
-       printf("Blank Payload Received\n\r"); 
+       if (DEBUG) {
+         printf("Blank Payload Received\n\r"); 
+       }
      } else {
        
        while(radio.available() ){
           unsigned long tim = micros();
-         
           radio.read( &ack_payload, sizeof(ack_t) );
-          printf("Got response %d - %d, round-trip delay: %lu microseconds\n\r", ack_payload.key, ack_payload.val, tim-time);
-
-          counter++;
+          ppsCounter++;
+          if (DEBUG) {
+            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+          }
         }
 
      }
   }
     
-  delay(1000); // Temporary delay
+  unsigned long now = millis();
+  if ( now - ppsLast > 1000 ) {
+    pps = ppsCounter;
+    ppsCounter = 0;
+    ppsLast = now;
+  }
+    
+  delay(50); // Temporary delay
 }
 
