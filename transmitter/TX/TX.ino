@@ -56,6 +56,8 @@ byte pipe_rx[6] = RX_ADDRESS;
 unsigned long ppsLast = 0;
 int ppsCounter = 0;
 int pps = 0;
+int ppsLost = 0;
+int ppsLostCounter = 0;
 
 void resetPayload() 
 {
@@ -125,13 +127,14 @@ int joystickMapValues(int val, int lower, int middle, int upper, bool reverse)
 
 void loop(void)
 {
-
   tx_payload.throttle = joystickMapValues( analogRead(PIN_THROTTLE), 100, 500, 900, false );
   tx_payload.yaw      = joystickMapValues( analogRead(PIN_YAW), 100, 500, 900, false );
   tx_payload.pitch    = joystickMapValues( analogRead(PIN_PITCH), 100, 500, 900, false );
   tx_payload.roll     = joystickMapValues( analogRead(PIN_ROLL), 100, 500, 900, false );
    
-  printf("Now sending throttle %d\n\r ",tx_payload.throttle);
+  if (DEBUG) {
+    //printf("Now sending throttle %d\n\r ",tx_payload.throttle);
+  }
   
   // Stop listening so we can talk.
   radio.stopListening();                                  
@@ -141,7 +144,8 @@ void loop(void)
   if (!radio.write( &tx_payload, sizeof(tx_t))) {
     // Got no ack.
     if (DEBUG) {
-      printf("no ack.\n\r"); 
+      //printf("no ack.\n\r"); 
+      ++ppsLostCounter;
     }
   } else {
      if (!radio.available()) { 
@@ -156,7 +160,7 @@ void loop(void)
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
           if (DEBUG) {
-            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
         }
 
@@ -166,10 +170,14 @@ void loop(void)
   unsigned long now = millis();
   if ( now - ppsLast > 1000 ) {
     pps = ppsCounter;
+    ppsLost = ppsLostCounter;
     ppsCounter = 0;
+    ppsLostCounter = 0;
     ppsLast = now;
+    printf("pps: %d, lost: %d \n\r", pps, ppsLost);
+
   }
     
-  delay(50); // Temporary delay
+  //delay(20); // Temporary delay
 }
 
