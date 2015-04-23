@@ -3,7 +3,6 @@
 #include <Wire.h>
 #include "U8glib.h"
 
-#define PIN_MONITOR_SS 8
 
 typedef struct{
   uint16_t key;
@@ -41,6 +40,13 @@ U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
 // SPI interrupt routine
 ISR (SPI_STC_vect)
 {
+  
+  // only listen if ss is low (arunino pin 8)
+  uint8_t port_b = PINB;
+  if (!bitRead(port_b, PINB0)) {
+    return;
+  }
+  
   byte c = SPDR;  // grab byte from SPI Data Register
 
   // add to buffer 
