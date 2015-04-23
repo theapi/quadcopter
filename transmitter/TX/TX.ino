@@ -21,6 +21,7 @@
 
 #define PIN_CE  7
 #define PIN_CSN 8
+#define PIN_MONITOR_SS 4
 
 #define PIN_THROTTLE A0
 #define PIN_YAW      A1
@@ -80,7 +81,7 @@ void setup()
    
   resetPayload();
    
-  radio.begin();
+  radio.begin(); // does the equivelent of SPI.begin()
   radio.setChannel(80);
   radio.setPayloadSize(sizeof(tx_t));
   
@@ -166,6 +167,8 @@ void loop(void)
 
      }
   }
+  
+  monitor_sendData();
     
   unsigned long now = millis();
   if ( now - ppsLast > 1000 ) {
@@ -177,7 +180,40 @@ void loop(void)
     printf("pps: %d, lost: %d \n\r", pps, ppsLost);
 
   }
+
     
   //delay(20); // Temporary delay
+}
+
+void monitor_sendData()
+{
+  byte data[4];
+  
+  data[0] = (ack_payload.key >> 8);
+  data[1] = ack_payload.key;
+  data[2] = (ack_payload.val >> 8);
+  data[3] = ack_payload.val;
+  
+  digitalWrite(PIN_MONITOR_SS, LOW);
+  for (byte i = 0; i < 4; ++i) {
+    monitor_sendByte(data[i]);
+  }
+  digitalWrite(PIN_MONITOR_SS, HIGH);
+}
+
+void monitor_sendByte(byte data)
+{
+  
+  SPI.transfer(data);
+  
+  /*
+  byte junk;
+  // Send the byte
+  SPDR = data;
+  // Wait for SPI process to finish
+  while(!(SPSR & (1<<SPIF)));
+  // Need to read the result
+  junk = SPDR;
+  */
 }
 
