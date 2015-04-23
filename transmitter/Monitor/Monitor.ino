@@ -43,7 +43,7 @@ ISR (SPI_STC_vect)
   
   // only listen if ss is low (arunino pin 8)
   uint8_t port_b = PINB;
-  if (!bitRead(port_b, PINB0)) {
+  if (bitRead(port_b, PINB0)) {
     return;
   }
   
