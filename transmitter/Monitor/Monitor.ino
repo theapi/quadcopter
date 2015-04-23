@@ -110,11 +110,37 @@ void loop()
       ack_flag = 6; 
       data[2] = c;
     } else if (ack_flag == 6) {
-      ack_flag = 7; 
+
       data[3] = c;
 
       ack_payload.key = (data[0] << 8) | data[1];
       ack_payload.val = (data[2] << 8) | data[3];
+      
+
+      switch (ack_payload.key) {
+        case 255:
+          monitor.pps = ack_payload.val;
+          break;
+        case 254:
+          monitor.pps_lost = ack_payload.val;
+          break;
+        case 1:
+          monitor.throttle = ack_payload.val;
+          break;
+        case 2:
+          monitor.yaw = ack_payload.val;
+          break;
+        case 3:
+          monitor.pitch = ack_payload.val;
+          break;
+        case 4:
+          monitor.roll = ack_payload.val;
+          break;
+      }
+      ack_flag = 0;
+      
+      ++monitor.pitch; //tmp
+
       
     } 
   }
@@ -123,25 +149,7 @@ void loop()
   //if (payload_buffer_head != payload_buffer_tail) {
   //  ack_t ack = payload_buffer[payload_buffer_tail];
     
-  if (ack_flag == 7) {
-    switch (ack_payload.key) {
-      case 1:
-        monitor.throttle = ack_payload.val;
-        break;
-      case 2:
-        monitor.yaw = ack_payload.val;
-        break;
-      case 3:
-        monitor.pitch = ack_payload.val;
-        break;
-      case 4:
-        monitor.roll = ack_payload.val;
-        break;
-    }
-    ack_flag = 0;
-    
-    ++monitor.pps_lost; //tmp
-  }
+
   
   /*  
     // Increment the tail index
@@ -154,7 +162,7 @@ void loop()
  
   
   
-  monitor.pps = ack_flag; //tmp
+ // monitor.pps = ack_flag; //tmp
   
   unsigned long now = millis();
   if ( now - fpsLast > 1000 ) {
@@ -190,7 +198,7 @@ void draw(void) {
   u8g.setFont(u8g_font_fub14n);
   u8g.setFontPosTop();
   u8g.setPrintPos(105, 0);
-  u8g.print(monitor.pps);
+  u8g.print(monitor.pps_lost);
 
   u8g.setFont(u8g_font_fub11n);
   u8g.setFontPosTop();
@@ -202,6 +210,6 @@ void draw(void) {
   u8g.print(monitor.roll);
 
   u8g.setPrintPos(90, 52);
-  u8g.print(monitor.pps_lost);
+  u8g.print(monitor.pps);
 }
 

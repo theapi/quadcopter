@@ -14,7 +14,7 @@
 #include "RF24.h"
 #include "printf.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define RX_ADDRESS "001RX"
 #define TX_ADDRESS "001TX"
@@ -164,7 +164,7 @@ void loop(void)
           monitor_sendData();
           ppsCounter++;
           if (DEBUG) {
-            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
         }
 
@@ -180,8 +180,15 @@ void loop(void)
     ppsCounter = 0;
     ppsLostCounter = 0;
     ppsLast = now;
-    printf("pps: %d, lost: %d \n\r", pps, ppsLost);
-
+    if (DEBUG) {
+      printf("pps: %d, lost: %d \n\r", pps, ppsLost);
+    }
+    ack_payload.key = 255;
+    ack_payload.val = pps;
+    monitor_sendData();
+    ack_payload.key = 254;
+    ack_payload.val = ppsLost;
+    monitor_sendData();
   }
 
     
