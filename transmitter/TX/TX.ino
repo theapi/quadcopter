@@ -14,7 +14,7 @@
 #include "RF24.h"
 #include "printf.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define RX_ADDRESS "001RX"
 #define TX_ADDRESS "001TX"
@@ -73,8 +73,10 @@ void resetPayload()
 
 void setup() 
 {
+  Serial.begin(57600);
+  
   if (DEBUG) {
-    Serial.begin(57600);
+    
     printf_begin();
     Serial.println("Begin");
   }
@@ -152,23 +154,24 @@ void loop(void)
      if (!radio.available()) { 
        // blank payload
        if (DEBUG) {
-         printf("Blank Payload Received\n\r"); 
+         //printf("Blank Payload Received\n\r"); 
        }
      } else {
        
        while(radio.available() ){
           unsigned long tim = micros();
           radio.read( &ack_payload, sizeof(ack_t) );
+          monitor_sendData();
           ppsCounter++;
           if (DEBUG) {
-            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
         }
 
      }
   }
   
-  monitor_sendData();
+  
     
   unsigned long now = millis();
   if ( now - ppsLast > 1000 ) {
@@ -187,33 +190,19 @@ void loop(void)
 
 void monitor_sendData()
 {
-  byte data[4];
+  byte data[7];
   
-  data[0] = (ack_payload.key >> 8);
-  data[1] = ack_payload.key;
-  data[2] = (ack_payload.val >> 8);
-  data[3] = ack_payload.val;
   
-  digitalWrite(PIN_MONITOR_SS, LOW);
-  for (byte i = 0; i < 4; ++i) {
-    monitor_sendByte(data[i]);
-  }
-  digitalWrite(PIN_MONITOR_SS, HIGH);
+  data[0] = 'A';
+  data[1] = 'C';
+  data[2] = 'K';
+  data[3] = (ack_payload.key >> 8);
+  data[4] = ack_payload.key;
+  data[5] = (ack_payload.val >> 8);
+  data[6] = ack_payload.val;
+  
+  Serial.write(data, 7);
 }
 
-void monitor_sendByte(byte data)
-{
-  
-  SPI.transfer(data);
-  
-  /*
-  byte junk;
-  // Send the byte
-  SPDR = data;
-  // Wait for SPI process to finish
-  while(!(SPSR & (1<<SPIF)));
-  // Need to read the result
-  junk = SPDR;
-  */
-}
+
 
