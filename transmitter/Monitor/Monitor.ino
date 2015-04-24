@@ -77,7 +77,7 @@ ISR (SPI_STC_vect)
 
 void setup()
 {
-  Serial.begin(57600);
+  Serial.begin(115200);
   
   memset(&monitor, 0, sizeof(monitor_t));
   memset(&ack_payload, 0, sizeof(ack_t));
