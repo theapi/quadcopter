@@ -5,8 +5,9 @@
 
 #define PAYLOAD_BUFFER_LENGTH 64
 
+// Small ack payload for speed
 typedef struct{
-  uint16_t key;
+  uint8_t key;
   uint16_t val;
 }
 ack_t;
@@ -88,7 +89,7 @@ void setup()
 void loop()
 {
   static byte ack_flag = 0;
-  static byte data[4];
+  static byte data[3];
   
   while (Serial.available() > 0) {
     byte c = Serial.read();
@@ -107,14 +108,10 @@ void loop()
       ack_flag = 5; 
       data[1] = c;
     } else if (ack_flag == 5) {
-      ack_flag = 6; 
       data[2] = c;
-    } else if (ack_flag == 6) {
 
-      data[3] = c;
-
-      ack_payload.key = (data[0] << 8) | data[1];
-      ack_payload.val = (data[2] << 8) | data[3];
+      ack_payload.key = data[0];
+      ack_payload.val = (data[1] << 8) | data[2];
       
 
       switch (ack_payload.key) {

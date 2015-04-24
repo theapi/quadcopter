@@ -44,7 +44,7 @@ tx_t tx_payload;
 
 // Small ack payload for speed
 typedef struct{
-  uint16_t key;
+  uint8_t key;
   uint16_t val;
 }
 ack_t;
@@ -197,18 +197,16 @@ void loop(void)
 
 void monitor_sendData()
 {
-  byte data[7];
-  
-  
+  byte data[6];
+
   data[0] = 'A';
   data[1] = 'C';
   data[2] = 'K';
-  data[3] = (ack_payload.key >> 8);
-  data[4] = ack_payload.key;
-  data[5] = (ack_payload.val >> 8);
-  data[6] = ack_payload.val;
+  data[3] = ack_payload.key;
+  data[4] = (ack_payload.val >> 8);
+  data[5] = ack_payload.val;
   
-  Serial.write(data, 7);
+  Serial.write(data, 6);
 }
 
 

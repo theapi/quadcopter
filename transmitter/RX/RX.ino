@@ -23,9 +23,9 @@ typedef struct{
 tx_t;
 tx_t tx_payload;
 
-// Small (4 bytes) ack payload for speed
+// Small ack payload for speed
 typedef struct{
-  uint16_t key;
+  uint8_t key;
   uint16_t val;
 }
 ack_t;
