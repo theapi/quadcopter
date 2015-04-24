@@ -41,48 +41,12 @@ volatile byte payload_buffer_tail;
 //U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE|U8G_I2C_OPT_DEV_0);
 U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
 
-// SPI interrupt routine
-ISR (SPI_STC_vect)
-{
-  
-  // only listen if ss is low (arunino pin 8)
-  uint8_t port_b = PINB;
-  if (bitRead(port_b, PINB0)) {
-    return;
-  }
-  
-  byte c = SPDR;  // grab byte from SPI Data Register
-  
-  // add to buffer 
-  if (spi_buffer_index < sizeof spi_buffer) {
-    spi_buffer[spi_buffer_index++] = c;
-  }
-  
-  if (spi_buffer_index > 3) {
-    // full ack_payload
-    spi_buffer_index = 0; 
-    
-    // add to the buffer to be processed in loop
-    ack_payload.key = (spi_buffer[0] << 8) | spi_buffer[1];
-    ack_payload.val = (spi_buffer[2] << 8) | spi_buffer[3];
-    payload_buffer[payload_buffer_head] = ack_payload;
-  
-    // Increment the index
-    payload_buffer_head++;
-    if (payload_buffer_head >= PAYLOAD_BUFFER_LENGTH) {
-      payload_buffer_head = 0;
-    }
-
-  }
-} 
-
 void setup()
 {
   Serial.begin(115200);
   
   memset(&monitor, 0, sizeof(monitor_t));
   memset(&ack_payload, 0, sizeof(ack_t));
-  
 
 }
 
@@ -142,37 +106,15 @@ void loop()
     } 
   }
   
-  // If head & tail are not in sync, process the next.
-  //if (payload_buffer_head != payload_buffer_tail) {
-  //  ack_t ack = payload_buffer[payload_buffer_tail];
-    
-
-  
-  /*  
-    // Increment the tail index
-    payload_buffer_tail++;
-    if (payload_buffer_tail >= PAYLOAD_BUFFER_LENGTH) {
-      payload_buffer_tail = 0;
-    }
-    */
-  //}
- 
-  
-  
- // monitor.pps = ack_flag; //tmp
-  
   unsigned long now = millis();
   if ( now - fpsLast > 1000 ) {
     fps = fpsCounter;
     fpsCounter = 0;
     fpsLast = now;
-    
-    
   }
   
   displayUpdate();
   
-  //delay(250); // tmp
 }
 
 void displayUpdate()
