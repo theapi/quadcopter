@@ -3,8 +3,6 @@
 #include <Wire.h>
 #include "U8glib.h"
 
-#define PAYLOAD_BUFFER_LENGTH 64
-
 // Small ack payload for speed
 typedef struct{
   uint8_t key;
@@ -26,17 +24,6 @@ typedef struct{
 }
 monitor_t;
 monitor_t monitor;
-
-unsigned long fpsLast = 0;
-int fpsCounter = 0;
-int fps = 0;
-
-char spi_buffer[4];
-volatile byte spi_buffer_index;
-ack_t payload_buffer[PAYLOAD_BUFFER_LENGTH]; // A temporary store the spi interrupts
-volatile byte payload_buffer_head;
-volatile byte payload_buffer_tail;
-
 
 //U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE|U8G_I2C_OPT_DEV_0);
 U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
@@ -106,20 +93,12 @@ void loop()
     } 
   }
   
-  unsigned long now = millis();
-  if ( now - fpsLast > 1000 ) {
-    fps = fpsCounter;
-    fpsCounter = 0;
-    fpsLast = now;
-  }
-  
   displayUpdate();
   
 }
 
 void displayUpdate()
 {
-  ++fpsCounter;
   // picture loop
   u8g.firstPage();
   do {
