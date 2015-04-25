@@ -1,5 +1,5 @@
 
-#include <SPI.h>
+
 #include <Wire.h>
 #include "U8glib.h"
 
@@ -54,24 +54,22 @@ void loop()
 
     if (ack_flag == 0 && c == 'A') {
       ack_flag = 1; 
-    } else if (ack_flag == 1 && c == 'C') {
+    } else if (ack_flag == 1) {
       ack_flag = 2; 
-    } else if (ack_flag == 2 && c == 'K') {
-      ack_flag = 3; 
-    } else if (ack_flag == 3) {
-      ack_flag = 4; 
       // next 3 bytes are the data
       data[0] = c;
-    } else if (ack_flag == 4) {
-      ack_flag = 5; 
+    } else if (ack_flag == 2) {
+      ack_flag = 3; 
       data[1] = c;
-    } else if (ack_flag == 5) {
-      data[2] = c;
-
+    } else if (ack_flag == 3) {
+      ack_flag = 4;
+      data[2] = c;  
+    } else if (ack_flag == 4 && c == 'K') {
+      ack_flag = 0; 
+      
       ack_payload.key = data[0];
       ack_payload.val = (data[1] << 8) | data[2];
       
-
       switch (ack_payload.key) {
         case 255:
           monitor.pps = ack_payload.val;
@@ -96,9 +94,11 @@ void loop()
           monitor.roll = ack_payload.val;
           break;
       }
-      ack_flag = 0;
       
-    } 
+    } else {
+      ack_flag = 0; 
+    }
+    
   }
   
   

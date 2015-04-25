@@ -165,13 +165,16 @@ void loop(void)
      } else {
        
        if (radio.available() ){
-          //unsigned long tim = micros();
+          unsigned long tim = micros();
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
           monitor_sendData();
           if (DEBUG) {
-            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
+          
+
+          
         }
 
      }
@@ -201,18 +204,18 @@ void loop(void)
 
 void monitor_sendData()
 {
-  byte data[6];
-
-  data[0] = 'A';
-  data[1] = 'C';
-  data[2] = 'K';
-  data[3] = ack_payload.key;
-  data[4] = (ack_payload.val >> 8);
-  data[5] = ack_payload.val;
+  if (!DEBUG) {
+    byte data[5];
   
-  Serial.write(data, 6);
-  //Serial.flush();
-
+    data[0] = 'A';
+    data[1] = ack_payload.key;
+    data[2] = (ack_payload.val >> 8);
+    data[3] = ack_payload.val;
+    data[4] = 'K';
+    
+    Serial.write(data, 5);
+    //Serial.flush();
+  }
 }
 
 
