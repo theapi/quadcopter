@@ -29,6 +29,7 @@ monitor_t monitor;
 U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
 
 unsigned long comms_last = 0;
+unsigned long display_last = 0;
 
 void setup()
 {
@@ -47,6 +48,8 @@ void loop()
   unsigned long now = millis(); 
   
   while (Serial.available() > 0) {
+    // Warn when monitor has lost comms with the TX.
+    comms_last = now;
     byte c = Serial.read();
 
     if (ack_flag == 0 && c == 'A') {
@@ -57,7 +60,7 @@ void loop()
       ack_flag = 3; 
     } else if (ack_flag == 3) {
       ack_flag = 4; 
-      // next 4 bytes are the data
+      // next 3 bytes are the data
       data[0] = c;
     } else if (ack_flag == 4) {
       ack_flag = 5; 
@@ -94,19 +97,18 @@ void loop()
           break;
       }
       ack_flag = 0;
-
+      
     } 
-    
-    // Warn when monitor has lost comms with the TX.
-    
-    comms_last = now;
   }
+  
   
   if (now - comms_last > 250) {
     memset(&monitor, 0, sizeof(monitor_t));
   }
   
-  displayUpdate();
+  if (now - display_last > 50) {
+    displayUpdate();
+  }
   
 }
 
