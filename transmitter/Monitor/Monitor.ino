@@ -28,6 +28,8 @@ monitor_t monitor;
 //U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE|U8G_I2C_OPT_DEV_0);
 U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
 
+unsigned long comms_last = 0;
+
 void setup()
 {
   Serial.begin(115200);
@@ -41,6 +43,8 @@ void loop()
 {
   static byte ack_flag = 0;
   static byte data[3];
+  
+  unsigned long now = millis(); 
   
   while (Serial.available() > 0) {
     byte c = Serial.read();
@@ -69,8 +73,12 @@ void loop()
         case 255:
           monitor.pps = ack_payload.val;
           break;
-        case 254:
-          monitor.pps_lost = ack_payload.val;
+        case 253:
+          monitor.vcc_tx = ack_payload.val;
+          break;
+          
+        case 0:
+          monitor.vcc_rx = ack_payload.val;
           break;
         case 1:
           monitor.throttle = ack_payload.val;
@@ -86,11 +94,16 @@ void loop()
           break;
       }
       ack_flag = 0;
-      
-      ++monitor.pitch; //tmp
 
-      
     } 
+    
+    // Warn when monitor has lost comms with the TX.
+    
+    comms_last = now;
+  }
+  
+  if (now - comms_last > 250) {
+    memset(&monitor, 0, sizeof(monitor_t));
   }
   
   displayUpdate();
@@ -108,6 +121,7 @@ void displayUpdate()
 
 void draw(void) {
   // graphic commands to redraw the complete screen should be placed here
+  /*
   u8g.setFont(u8g_font_fub42n);
   u8g.setFontPosTop();
   u8g.setPrintPos(0, 0);
@@ -117,17 +131,33 @@ void draw(void) {
   u8g.setFontPosTop();
   u8g.setPrintPos(105, 0);
   u8g.print(monitor.pps_lost);
+*/
 
   u8g.setFont(u8g_font_fub11n);
+  //u8g.setFont(u8g_font_unifont);
   u8g.setFontPosTop();
   
-  u8g.setPrintPos(0, 52);
+
+  u8g.setPrintPos(0, 0);
+  u8g.print(monitor.throttle);
+  u8g.setPrintPos(50, 0);
+  u8g.print(monitor.yaw);
+  
+  u8g.setPrintPos(0, 20);
   u8g.print(monitor.pitch);
-
-  u8g.setPrintPos(23, 52);
+  u8g.setPrintPos(50, 20);
   u8g.print(monitor.roll);
-
-  u8g.setPrintPos(90, 52);
+  
+  u8g.setPrintPos(90, 0);
   u8g.print(monitor.pps);
+  
+  u8g.setPrintPos(0, 52);
+  u8g.print(monitor.vcc_tx);
+
+  u8g.setPrintPos(80, 52);
+  u8g.print(monitor.vcc_rx);
+ 
+  
+  
 }
 

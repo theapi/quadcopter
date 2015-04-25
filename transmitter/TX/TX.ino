@@ -14,7 +14,7 @@
 #include "RF24.h"
 #include "printf.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define RX_ADDRESS "001RX"
 #define TX_ADDRESS "001TX"
@@ -59,6 +59,8 @@ int ppsCounter = 0;
 int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
+
+unsigned long vcc_last = 0;
 
 void resetPayload() 
 {
@@ -106,6 +108,10 @@ void setup()
     radio.printDetails();   
     Serial.println("End begin");
   }
+  
+  ack_payload.key = 253;
+  ack_payload.val = 4000; //@todo tx battery level
+  monitor_sendData();
   
   radio.startListening();
 }
@@ -171,10 +177,8 @@ void loop(void)
      }
   }
   
-  
-    
   unsigned long now = millis();
-  if ( now - ppsLast > 1000 ) {
+  if ( now - ppsLast > 250 ) {
     pps = ppsCounter;
     ppsLost = ppsLostCounter;
     ppsCounter = 0;
@@ -186,13 +190,15 @@ void loop(void)
     ack_payload.key = 255;
     ack_payload.val = pps;
     monitor_sendData();
-    ack_payload.key = 254;
-    ack_payload.val = ppsLost;
+  }
+  
+  if (now - vcc_last > 10000) {
+    vcc_last = now;
+    ack_payload.key = 253;
+    ack_payload.val = 4000; //@todo tx battery level
     monitor_sendData();
   }
 
-    
-  //delay(20); // Temporary delay
 }
 
 void monitor_sendData()
@@ -207,6 +213,7 @@ void monitor_sendData()
   data[5] = ack_payload.val;
   
   Serial.write(data, 6);
+  //Serial.flush();
 }
 
 

@@ -34,6 +34,7 @@ ack_t ack_payload;
 byte pipe_tx[6] = TX_ADDRESS;
 byte pipe_rx[6] = RX_ADDRESS;
 
+int vcc = 3800;
 
 void setup() 
 {
@@ -71,6 +72,7 @@ void setup()
 void loop(void) 
 {
     static byte ack_ready = 0;
+    static byte ack_key = 0;
     
     if (!ack_ready) {
       // Create the ack payload read for the next transmission response
@@ -82,9 +84,28 @@ void loop(void)
       radio.read( &tx_payload, sizeof(tx_t) );
       ack_ready = 0;
 
-      ack_payload.key = 1;
-      ack_payload.val = tx_payload.throttle;  
+      ack_payload.key = ack_key;
+      switch (ack_key) {
+        case 0:
+          ack_payload.val = vcc; 
+          break;
+        case 1:
+          ack_payload.val = tx_payload.throttle; 
+          break;
+        case 2:
+          ack_payload.val = tx_payload.yaw; 
+          break;
+        case 3:
+          ack_payload.val = tx_payload.pitch; 
+          break;
+        case 4:
+          ack_payload.val = tx_payload.roll; 
+          break;
+      }  
         
+      if (++ack_key > 4) {
+        ack_key = 0; 
+      }
    }
 
 }
