@@ -190,9 +190,7 @@ void loop(void)
     ack_payload.key = 255;
     ack_payload.val = pps;
     monitor_sendData();
-  }
-  
-  if (now - vcc_last > 10000) {
+  } else if (now - vcc_last > 10000) {
     vcc_last = now;
     ack_payload.key = 253;
     ack_payload.val = 4000; //@todo tx battery level
