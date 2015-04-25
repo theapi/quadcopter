@@ -191,9 +191,11 @@ void loop(void)
       printf("pps: %d, lost: %d \n\r", pps, ppsLost);
     }
     ack_payload.key = 255;
-    ack_payload.val = pps;
+    ack_payload.val = (pps << 2); // Multiply by 4 (fast)
     monitor_sendData();
-  } else if (now - vcc_last > 3000) {
+  } 
+  
+  if (now - vcc_last > 3000) {
     vcc_last = now;
     ack_payload.key = 253;
     ack_payload.val = 4000; //@todo tx battery level
