@@ -11,11 +11,11 @@ void setup() {
 void loop() {
  
   
-  byte pwm = joystickMapValues( analogRead(PIN_THROTTLE), 0, 512, 1024, false );
+  byte pwm = joystickMapValues( analogRead(PIN_THROTTLE), 0, 512, 1023, false );
   analogWrite(PIN_MOTOR, pwm);   
 
   //Serial.println(pwm);  
-  //delay(250);
+  //delay(100);
 }
 
 int joystickMapValues(int val, int lower, int middle, int upper, bool reverse)
