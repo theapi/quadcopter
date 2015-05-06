@@ -34,7 +34,7 @@ unsigned long display_last = 0;
 void setup()
 {
   Serial.begin(115200);
-  
+  u8g.setRot180();
   memset(&monitor, 0, sizeof(monitor_t));
   memset(&ack_payload, 0, sizeof(ack_t));
 
