@@ -60,8 +60,6 @@ int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
 
-unsigned long vcc_last = 0;
-
 void resetPayload() 
 {
   tx_payload.throttle = 0;
@@ -172,9 +170,7 @@ void loop(void)
           if (DEBUG) {
             printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
-          
 
-          
         }
 
      }
@@ -194,13 +190,6 @@ void loop(void)
     ack_payload.val = (pps << 2); // Multiply by 4 (fast)
     monitor_sendData();
   } 
-  
-  if (now - vcc_last > 3000) {
-    vcc_last = now;
-    ack_payload.key = 253;
-    ack_payload.val = 4000; //@todo tx battery level
-    monitor_sendData();
-  }
 
 }
 
