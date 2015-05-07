@@ -70,7 +70,10 @@ void setup()
   u8g.setRot180();
   memset(&monitor, 0, sizeof(monitor_t));
   memset(&ack_payload, 0, sizeof(ack_t));
-
+  
+  // Do a couple of vcc readings, as the first may be junk.
+  vcc = batteryVcc(); 
+  vcc = batteryVcc(); 
 }
 
 void loop()
