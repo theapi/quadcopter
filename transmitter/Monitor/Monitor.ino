@@ -158,6 +158,7 @@ void loop()
   // Change the display if there is no serial data from the transmitter
   if (now - comms_last > 250) {
     memset(&monitor, 0, sizeof(monitor_t));
+    monitor.vcc_tx = vcc;
   }
   
   if (now - display_last > 50) {
