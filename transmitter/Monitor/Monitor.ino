@@ -84,49 +84,65 @@ void loop()
     // Warn when monitor has lost comms with the TX.
     comms_last = now;
     byte c = Serial.read();
-
-    if (ack_flag == 0 && c == 'A') {
-      ack_flag = 1; 
-    } else if (ack_flag == 1) {
-      ack_flag = 2; 
-      // next 3 bytes are the data
-      data[0] = c;
-    } else if (ack_flag == 2) {
-      ack_flag = 3; 
-      data[1] = c;
-    } else if (ack_flag == 3) {
-      ack_flag = 4;
-      data[2] = c;  
-    } else if (ack_flag == 4 && c == 'K') {
-      ack_flag = 0; 
-      
-      ack_payload.key = data[0];
-      ack_payload.val = (data[1] << 8) | data[2];
-      
-      switch (ack_payload.key) {
-        case 255:
-          monitor.pps = ack_payload.val;
-          break;          
-        case 0:
-          monitor.vcc_rx = ack_payload.val;
-          break;
-        case 1:
-          monitor.throttle = ack_payload.val;
-          break;
-        case 2:
-          monitor.yaw = ack_payload.val;
-          break;
-        case 3:
-          monitor.pitch = ack_payload.val;
-          break;
-        case 4:
-          monitor.roll = ack_payload.val;
-          break;
-      }
-      monitor.vcc_tx = vcc;
-      
-    } else {
-      ack_flag = 0; 
+    
+    switch (ack_flag) {
+      case 0:
+        if (c == 'A') {
+          ack_flag = 1; 
+        }
+        break;
+        
+      case 1:
+        ack_flag = 2; 
+        // this & the next 2 bytes are the data
+        data[0] = c;
+        break;
+        
+      case 2:
+        ack_flag = 3; 
+        data[1] = c;
+        break;
+        
+      case 3:
+        ack_flag = 4;
+        data[2] = c; 
+        break;
+        
+      case 4:
+        ack_flag = 0; 
+        if (c == 'K') {
+          ack_payload.key = data[0];
+          ack_payload.val = (data[1] << 8) | data[2];
+          
+          switch (ack_payload.key) {
+            case 255:
+              monitor.pps = ack_payload.val;
+              break;          
+            case 0:
+              monitor.vcc_rx = ack_payload.val;
+              break;
+            case 1:
+              monitor.throttle = ack_payload.val;
+              break;
+            case 2:
+              monitor.yaw = ack_payload.val;
+              break;
+            case 3:
+              monitor.pitch = ack_payload.val;
+              break;
+            case 4:
+              monitor.roll = ack_payload.val;
+              break;
+          }
+          
+          monitor.vcc_tx = vcc;
+          
+        }
+        break;
+        
+      default:
+        ack_flag = 0;
+        break;
     }
     
   }
