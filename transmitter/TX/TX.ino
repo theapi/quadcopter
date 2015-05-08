@@ -118,15 +118,18 @@ void setup()
 /****************************************************************************/
 
 // Returns a corrected value for a joystick position that takes into account
-// the values of the outer extents and the middle of the joystick range.
-int joystickMapValues(int val, int lower, int middle, int upper, bool reverse)
+// the values of the outer extents and the middle of the joystick range
+// and maps it to the range the RX expects.
+int joystickMapValues(int val, int lower, int middle, int upper)
 {
   val = constrain(val, lower, upper);
   if ( val < middle )
-    val = map(val, lower, middle, 0, 128);
+    val = map(val, lower, middle, 0, 499);
   else
-    val = map(val, middle, upper, 128, 255);
-  return ( reverse ? 255 - val : val );
+    val = map(val, middle, upper, 500, 1000);
+  
+  // RX expects values between 1000 & 2000
+  return val + 1000; 
 }
 
 /****************************************************************************/
@@ -134,10 +137,10 @@ int joystickMapValues(int val, int lower, int middle, int upper, bool reverse)
 
 void loop(void)
 {
-  tx_payload.throttle = joystickMapValues( analogRead(PIN_THROTTLE), 100, 500, 900, false );
-  tx_payload.yaw      = joystickMapValues( analogRead(PIN_YAW), 100, 500, 900, false );
-  tx_payload.pitch    = joystickMapValues( analogRead(PIN_PITCH), 100, 500, 900, false );
-  tx_payload.roll     = joystickMapValues( analogRead(PIN_ROLL), 100, 500, 900, false );
+  tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 0, 511, 1023);
+  tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 0, 511, 1023);
+  tx_payload.pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
+  tx_payload.roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
    
   if (DEBUG) {
     //printf("Now sending throttle %d\n\r ",tx_payload.throttle);
