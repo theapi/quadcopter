@@ -150,7 +150,7 @@ void loop(void)
   radio.stopListening();                                  
         
   // Take the time, and send it.  This will block until complete 
-  unsigned long time = micros();  
+  //unsigned long time = micros();  
   if (!radio.write( &tx_payload, sizeof(tx_t))) {
     // Got no ack.
     if (DEBUG) {
@@ -166,12 +166,12 @@ void loop(void)
      } else {
        
        if (radio.available() ){
-          unsigned long tim = micros();
+          //unsigned long tim = micros();
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
           monitor_sendData();
           if (DEBUG) {
-            printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
           }
 
         }
