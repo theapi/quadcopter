@@ -31,12 +31,10 @@
 RF24 radio(PIN_CE, PIN_CSN);
 
 typedef struct{
-  byte throttle;
-  byte yaw;
-  byte pitch;
-  byte roll;
-  byte dial1;
-  byte dial2;
+  int throttle;
+  int yaw;
+  int pitch;
+  int roll;
   byte switches; // bitflag
 }
 tx_t;
@@ -63,11 +61,9 @@ int ppsLostCounter = 0;
 void resetPayload() 
 {
   tx_payload.throttle = 0;
-  tx_payload.yaw = 127;
-  tx_payload.pitch = 127;
-  tx_payload.roll = 127;
-  tx_payload.dial1 = 0;
-  tx_payload.dial2 = 0;
+  tx_payload.yaw = 1500;
+  tx_payload.pitch = 1500;
+  tx_payload.roll = 1500;
   tx_payload.switches = 0;
 }
 
@@ -107,9 +103,9 @@ void setup()
     Serial.println("End begin");
   }
   
-  ack_payload.key = 253;
-  ack_payload.val = 4000; //@todo tx battery level
-  monitor_sendData();
+  //ack_payload.key = 253;
+  //ack_payload.val = 4000; //@todo tx battery level
+  //monitor_sendData();
   
   radio.startListening();
 }
@@ -137,13 +133,14 @@ int joystickMapValues(int val, int lower, int middle, int upper)
 
 void loop(void)
 {
-  tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 0, 511, 1023);
-  tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 0, 511, 1023);
+ 
+  tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
+  tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
   tx_payload.pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
   tx_payload.roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
-   
+
   if (DEBUG) {
-    //printf("Now sending throttle %d\n\r ",tx_payload.throttle);
+    printf("val: %d\n\r ",tx_payload.throttle);
   }
   
   // Stop listening so we can talk.
@@ -171,7 +168,7 @@ void loop(void)
           ppsCounter++;
           monitor_sendData();
           if (DEBUG) {
-            //printf("Got response %d, pps: %d , round-trip: %lu microseconds\n\r", ack_payload.val, pps, tim-time);
+            //printf("Got response %d, pps: %d \n\r", ack_payload.val, pps);
           }
 
         }
@@ -187,7 +184,7 @@ void loop(void)
     ppsLostCounter = 0;
     ppsLast = now;
     if (DEBUG) {
-      printf("pps: %d, lost: %d \n\r", pps, ppsLost);
+      //printf("pps: %d, lost: %d \n\r", pps, ppsLost);
     }
     ack_payload.key = 255;
     ack_payload.val = (pps << 2); // Multiply by 4 (fast)

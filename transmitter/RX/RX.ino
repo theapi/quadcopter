@@ -12,12 +12,10 @@
 RF24 radio(PIN_CE, PIN_CSN);
 
 typedef struct{
-  byte throttle;
-  byte yaw;
-  byte pitch;
-  byte roll;
-  byte dial1;
-  byte dial2;
+  int throttle;
+  int yaw;
+  int pitch;
+  int roll;
   byte switches; // bitflag
 }
 tx_t;
