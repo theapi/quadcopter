@@ -13,6 +13,7 @@
 #include "nRF24L01.h"
 #include "RF24.h"
 #include "printf.h"
+#include "comm.h"
 
 #define DEBUG 0
 
@@ -27,6 +28,7 @@
 #define PIN_YAW      A1
 #define PIN_PITCH    A2
 #define PIN_ROLL     A3
+
 
 RF24 radio(PIN_CE, PIN_CSN);
 
@@ -48,7 +50,6 @@ typedef struct{
 ack_t;
 ack_t ack_payload;
 
-
 byte pipe_tx[6] = TX_ADDRESS;
 byte pipe_rx[6] = RX_ADDRESS;
 
@@ -57,6 +58,8 @@ int ppsCounter = 0;
 int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
+
+comm_t comm_payload;
 
 void resetPayload() 
 {
@@ -170,11 +173,15 @@ void loop(void)
           
           // @todo switch to decide what data to show
           if (ack_payload.key == 0) {
+            comm_payload.key = ack_payload.key;
+            comm_payload.val = ack_payload.val;
+            comm_push(comm_payload);
             // Currently only interested in vcc
             monitor_sendData();
           } else {
             // Send local data to the monitor
             monitor_sendLocalData();
+            
           }
           
           if (DEBUG) {
@@ -207,6 +214,7 @@ void monitor_sendData()
 {
   if (!DEBUG) {
     byte data[5];
+  
   
     data[0] = 'A';
     data[1] = ack_payload.key;
