@@ -145,7 +145,10 @@ void loop()
   // Read the battery level
   if (now - vcc_last > 1000) {
     vcc_last = now;
-    vcc = batteryVcc(); 
+    //vcc = batteryVcc();
+
+    // Running average
+    vcc = vcc * 0.9 + batteryVcc() * 0.1;
   }
   
   // Change the display if there is no serial data from the transmitter
