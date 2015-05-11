@@ -133,7 +133,8 @@ int joystickMapValues(int val, int lower, int middle, int upper)
 
 void loop(void)
 {
- 
+  
+  
   tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
   tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
   tx_payload.pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
@@ -166,7 +167,16 @@ void loop(void)
           //unsigned long tim = micros();
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
-          monitor_sendData();
+          
+          // @todo switch to decide what data to show
+          if (ack_payload.key == 0) {
+            // Currently only interested in vcc
+            monitor_sendData();
+          } else {
+            // Send local data to the monitor
+            monitor_sendLocalData();
+          }
+          
           if (DEBUG) {
             //printf("Got response %d, pps: %d \n\r", ack_payload.val, pps);
           }
@@ -209,5 +219,28 @@ void monitor_sendData()
   }
 }
 
-
+void monitor_sendLocalData() {
+  static byte i = 0; 
+  
+  switch (i) {
+    case 0:
+      ack_payload.val = tx_payload.throttle; 
+      break;
+    case 1:
+      ack_payload.val = tx_payload.yaw; 
+      break;
+    case 2:
+      ack_payload.val = tx_payload.pitch; 
+      break;
+    case 3:
+      ack_payload.val = tx_payload.roll; 
+      break;
+  } 
+      
+  if (++i > 3) {
+    i = 0; 
+  }
+  
+  monitor_sendData();
+}
 
