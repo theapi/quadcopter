@@ -14,6 +14,7 @@
 #include "RF24.h"
 #include "printf.h"
 #include "comm.h"
+#include "def.h"
 
 #define DEBUG 0
 
@@ -59,7 +60,7 @@ int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
 
-comm_t comm_payload;
+
 
 void resetPayload() 
 {
@@ -172,16 +173,11 @@ void loop(void)
           ppsCounter++;
           
           // @todo switch to decide what data to show
-          if (ack_payload.key == 0) {
+          if (ack_payload.key == NRF24_KEY_VCC) {
+            comm_t comm_payload;
             comm_payload.key = ack_payload.key;
             comm_payload.val = ack_payload.val;
             comm_push(comm_payload);
-            // Currently only interested in vcc
-            monitor_sendData();
-          } else {
-            // Send local data to the monitor
-            monitor_sendLocalData();
-            
           }
           
           if (DEBUG) {
@@ -203,10 +199,17 @@ void loop(void)
     if (DEBUG) {
       //printf("pps: %d, lost: %d \n\r", pps, ppsLost);
     }
-    ack_payload.key = 255;
-    ack_payload.val = (pps << 2); // Multiply by 4 (fast)
-    monitor_sendData();
-  } 
+
+    comm_t comm_payload;
+    comm_payload.key = NRF24_KEY_PPS;
+    comm_payload.val = (pps << 2); // Multiply by 4 (fast)
+    comm_push(comm_payload);
+
+  } else {
+    monitor_setLocalData(); 
+  }
+  
+  monitor_sendData();
 
 }
 
@@ -215,40 +218,44 @@ void monitor_sendData()
   if (!DEBUG) {
     byte data[5];
   
-  
-    data[0] = 'A';
-    data[1] = ack_payload.key;
-    data[2] = (ack_payload.val >> 8);
-    data[3] = ack_payload.val;
-    data[4] = 'K';
-    
-    Serial.write(data, 5);
-    //Serial.flush();
+    while (!comm_empty()) {
+      comm_t payload = comm_shift();
+      data[0] = 'A';
+      data[1] = payload.key;
+      data[2] = (payload.val >> 8);
+      data[3] = payload.val;
+      data[4] = 'K';
+
+      Serial.write(data, 5);
+      //Serial.flush();
+    }
   }
 }
 
-void monitor_sendLocalData() {
-  static byte i = 0; 
-  
+void monitor_setLocalData() {
+  static byte i = 1; 
+
+  comm_t payload;
+  payload.key = i;
   switch (i) {
-    case 0:
-      ack_payload.val = tx_payload.throttle; 
+    case NRF24_KEY_THROTTLE:
+      payload.val = tx_payload.throttle; 
       break;
-    case 1:
-      ack_payload.val = tx_payload.yaw; 
+    case NRF24_KEY_YAW:
+      payload.val = tx_payload.yaw; 
       break;
-    case 2:
-      ack_payload.val = tx_payload.pitch; 
+    case NRF24_KEY_PITCH:
+      payload.val = tx_payload.pitch; 
       break;
-    case 3:
-      ack_payload.val = tx_payload.roll; 
+    case NRF24_KEY_ROLL:
+      payload.val = tx_payload.roll; 
       break;
   } 
-      
-  if (++i > 3) {
-    i = 0; 
-  }
   
-  monitor_sendData();
+  comm_push(payload);
+      
+  if (++i > 4) {
+    i = 1; 
+  }
 }
 

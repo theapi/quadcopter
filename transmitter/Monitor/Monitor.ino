@@ -2,24 +2,18 @@
 
 #include <Wire.h>
 #include "U8glib.h"
-
-// Small ack payload for speed
-typedef struct{
-  uint8_t key;
-  uint16_t val;
-}
-ack_t;
-ack_t ack_payload;
+#include "comm.h"
+#include "def.h"
 
 typedef struct{
   int vcc_tx;
   int vcc_rx;
   int pps;
   int pps_lost;
-  byte throttle;
-  byte yaw;
-  byte pitch;
-  byte roll;
+  int throttle;
+  int yaw;
+  int pitch;
+  int roll;
 
 }
 monitor_t;
@@ -69,7 +63,6 @@ void setup()
   Serial.begin(115200);
   u8g.setRot180();
   memset(&monitor, 0, sizeof(monitor_t));
-  memset(&ack_payload, 0, sizeof(ack_t));
   
   // Do a couple of vcc readings, as the first may be junk.
   vcc = batteryVcc(); 
@@ -114,27 +107,26 @@ void loop()
       case 4:
         ack_flag = 0; 
         if (c == 'K') {
-          ack_payload.key = data[0];
-          ack_payload.val = (data[1] << 8) | data[2];
+          int val = (data[1] << 8) | data[2];
           
-          switch (ack_payload.key) {
-            case 255:
-              monitor.pps = ack_payload.val;
+          switch (data[0]) {
+            case NRF24_KEY_PPS:
+              monitor.pps = val;
               break;          
-            case 0:
-              monitor.vcc_rx = ack_payload.val;
+            case NRF24_KEY_VCC:
+              monitor.vcc_rx = val;
               break;
-            case 1:
-              monitor.throttle = ack_payload.val;
+            case NRF24_KEY_THROTTLE:
+              monitor.throttle = val;
               break;
-            case 2:
-              monitor.yaw = ack_payload.val;
+            case NRF24_KEY_YAW:
+              monitor.yaw = val;
               break;
-            case 3:
-              monitor.pitch = ack_payload.val;
+            case NRF24_KEY_PITCH:
+              monitor.pitch = val;
               break;
-            case 4:
-              monitor.roll = ack_payload.val;
+            case NRF24_KEY_ROLL:
+              monitor.roll = val;
               break;
           }
           
@@ -152,6 +144,7 @@ void loop()
   
   // Read the battery level
   if (now - vcc_last > 1000) {
+    vcc_last = now;
     vcc = batteryVcc(); 
   }
   
