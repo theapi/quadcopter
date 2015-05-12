@@ -171,8 +171,7 @@ void loop(void)
           //unsigned long tim = micros();
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
-          
-          // @todo switch to decide what data to show
+
           if (ack_payload.key == NRF24_KEY_VCC) {
             comm_t comm_payload;
             comm_payload.key = ack_payload.key;

@@ -5,6 +5,11 @@
 #include "comm.h"
 #include "def.h"
 
+#define PIN_SWITCH_A 17 // A3 (PC3 - PCINT11)
+#define PIN_SWITCH_B 16 // A2 (PC2 - PCINT10)
+#define PIN_SWITCH_C 15 // A1 (PC1 - PCINT9)
+#define PIN_SWITCH_D 14 // A0 (PC0 - PCINT8)
+
 typedef struct{
   int vcc_tx;
   int vcc_rx;
@@ -26,6 +31,7 @@ unsigned long comms_last = 0;
 unsigned long display_last = 0;
 unsigned long vcc_last = 0;
 int vcc = 0;
+uint8_t switches = 0; // bit flag
 
 void batterySetup()
 {
@@ -64,6 +70,12 @@ void setup()
   u8g.setRot180();
   memset(&monitor, 0, sizeof(monitor_t));
   
+  // Push button switches
+  pinMode(PIN_SWITCH_A, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_B, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_C, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_D, INPUT_PULLUP);
+  
   // Do a couple of vcc readings, as the first may be junk.
   vcc = batteryVcc(); 
   vcc = batteryVcc(); 
@@ -73,6 +85,10 @@ void loop()
 {
   static byte ack_flag = 0;
   static byte data[3];
+  
+  // http://www.labbookpages.co.uk/electronics/debounce.html
+  static uint8_t debounce_switches[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+  static unsigned long debounce_sample_last = 0;
   
   unsigned long now = millis(); 
   
@@ -156,6 +172,69 @@ void loop()
     memset(&monitor, 0, sizeof(monitor_t));
     monitor.vcc_tx = vcc;
   }
+  
+  // Poll the switches 
+  if (now - debounce_sample_last > 5) {
+    // Debounce, then set the mode.
+    debounce_sample_last = now;
+    // Read all the switch pins at once.
+    uint8_t port_c = PINC;
+
+    // Shift the variable towards the most significant bit
+    // and set the least significant bit to the current switch value
+    for (uint8_t i = 0; i < 4; i++) {
+      debounce_switches[i] <<= 1;
+      bitWrite(debounce_switches[i], 0, bitRead(port_c, i));
+      if (debounce_switches[i] == 0) {
+        bitWrite(switches, i, 1);
+      } else {
+        bitWrite(switches, i, 0);
+      }
+    }
+    
+    /*
+    debounce_switches[0] <<= 1;
+    bitWrite(debounce_switches[0], 0, bitRead(port_c, PINC0));
+
+    debounce_switches[1] <<= 1;
+    bitWrite(debounce_switches[1], 0, bitRead(port_c, PINC1));
+
+    debounce_switches[2] <<= 1;
+    bitWrite(debounce_switches[2], 0, bitRead(port_c, PINC2));
+    
+    debounce_switches[3] <<= 1;
+    bitWrite(debounce_switches[3], 0, bitRead(port_c, PINC3));
+
+    if (debounce_switches[0] == 0) {
+      bitWrite(switches, 0, 1);
+    } else {
+      bitWrite(switches, 0, 0);
+    }
+    
+    if (debounce_switches[1] == 0) {
+      bitWrite(switches, 1, 1);
+    } else {
+      bitWrite(switches, 1, 0);
+    }
+    
+    if (debounce_switches[2] == 0) {
+      bitWrite(switches, 2, 1);
+    } else {
+      bitWrite(switches, 2, 0);
+    }
+    
+    if (debounce_switches[3] == 0) {
+      bitWrite(switches, 3, 1);
+    } else {
+      bitWrite(switches, 3, 0);
+    }
+    */
+    
+
+
+  }
+
+  
   
   if (now - display_last > 50) {
     displayUpdate();
