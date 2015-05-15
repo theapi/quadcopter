@@ -157,6 +157,7 @@ void loop(void)
   tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
   tx_payload.pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
   tx_payload.roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
+  tx_payload.switches = switches;
 
   if (DEBUG) {
     printf("val: %d\n\r ",tx_payload.throttle);
