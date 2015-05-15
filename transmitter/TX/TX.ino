@@ -23,13 +23,17 @@
 
 #define PIN_CE  7
 #define PIN_CSN 8
-#define PIN_MONITOR_SS 4
 
 #define PIN_THROTTLE A0
 #define PIN_YAW      A1
 #define PIN_PITCH    A2
 #define PIN_ROLL     A3
 
+#define PIN_SWITCH_A 2 // (PD2 - PCINT18)
+#define PIN_SWITCH_B 3 // (PD3 - PCINT19)
+#define PIN_SWITCH_C 4 // (PD4 - PCINT20)
+#define PIN_SWITCH_D 5 // (PD5 - PCINT21)
+#define PIN_SWITCH_E 6 // (PD6 - PCINT22)
 
 RF24 radio(PIN_CE, PIN_CSN);
 
@@ -60,7 +64,7 @@ int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
 
-
+uint8_t switches = 0; // bit flag
 
 void resetPayload() 
 {
@@ -73,6 +77,13 @@ void resetPayload()
 
 void setup() 
 {
+  // Push button switches
+  pinMode(PIN_SWITCH_A, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_B, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_C, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_D, INPUT_PULLUP);
+  pinMode(PIN_SWITCH_E, INPUT_PULLUP);
+  
   Serial.begin(115200);
   
   if (DEBUG) {
@@ -137,7 +148,10 @@ int joystickMapValues(int val, int lower, int middle, int upper)
 
 void loop(void)
 {
-  
+  // http://www.labbookpages.co.uk/electronics/debounce.html
+  static uint8_t debounce_switches[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  static unsigned long debounce_sample_last = 0;
+ 
   
   tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
   tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
@@ -189,6 +203,29 @@ void loop(void)
   }
   
   unsigned long now = millis();
+  
+  // Poll the switches 
+  if (now - debounce_sample_last > 5) {
+    // Debounce, then set the mode.
+    debounce_sample_last = now;
+    // Read all the switch pins at once.
+    uint8_t port_d = PIND;
+
+    // Shift the variable towards the most significant bit
+    // and set the least significant bit to the current switch value
+    for (uint8_t i = 0; i < 5; i++) {
+      uint8_t pin = i + 2; // PD2 -> PD7
+      debounce_switches[i] <<= 1;
+      bitWrite(debounce_switches[i], 0, bitRead(port_d, pin));
+      if (debounce_switches[i] == 0) {
+        bitWrite(switches, i, 1);
+      } else {
+        bitWrite(switches, i, 0);
+      }
+    }
+    
+  }
+  
   if ( now - ppsLast > 250 ) {
     pps = ppsCounter;
     ppsLost = ppsLostCounter;
