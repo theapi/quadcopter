@@ -112,13 +112,20 @@ void loop() {
  
   // Prove the main timer is working
   unsigned long now = millis();
-  Serial.println(now);
+  //Serial.println(now);
   
-  byte pwm = analogRead(PIN_THROTTLE) / 4;
+  //byte pwm = analogRead(PIN_THROTTLE) / 4;
+  
+  
+  byte pwm = (tx_payload.yaw -1000) / 4;
+  if (pwm < 15) {
+    // Uncalibrated sticks so just oof at low enough value
+    pwm = 0; 
+  }
   
   analogWrite(PIN_MOTOR, pwm);   
 
-  //Serial.println(pwm);  
+  //Serial.println();  
   //delay(100);
 }
 
