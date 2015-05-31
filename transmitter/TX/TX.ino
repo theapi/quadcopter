@@ -160,7 +160,7 @@ void loop(void)
   tx_payload.switches = switches;
 
   if (DEBUG) {
-    printf("val: %d\n\r ",tx_payload.throttle);
+    //printf("val: %d\n\r ",tx_payload.throttle);
   }
   
   // Stop listening so we can talk.
@@ -184,18 +184,17 @@ void loop(void)
        
        if (radio.available() ){
           //unsigned long tim = micros();
+          memset(&ack_payload, 0, sizeof(tx_t));
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
 
-          if (ack_payload.key == NRF24_KEY_VCC) {
-            comm_t comm_payload;
-            comm_payload.key = ack_payload.key;
-            comm_payload.val = ack_payload.val;
-            comm_push(comm_payload);
-          }
-          
+          comm_t comm_payload;
+          comm_payload.key = ack_payload.key;
+          comm_payload.val = ack_payload.val;
+          comm_push(comm_payload);
+
           if (DEBUG) {
-            //printf("Got response %d, pps: %d \n\r", ack_payload.val, pps);
+            printf("Got key %d, val: %d \n\r", ack_payload.key, ack_payload.val);
           }
 
         }
@@ -273,7 +272,7 @@ void monitor_setLocalData() {
   static byte i = 1; 
 
   comm_t payload;
-  payload.key = i;
+  payload.key = 5;
   switch (i) {
     case NRF24_KEY_THROTTLE:
       payload.val = tx_payload.throttle; 
@@ -291,8 +290,8 @@ void monitor_setLocalData() {
   
   comm_push(payload);
       
-  if (++i > 4) {
-    i = 1; 
+  if (++i > 8) {
+    i = 5; 
   }
 }
 
