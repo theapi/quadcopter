@@ -269,10 +269,10 @@ void monitor_sendData()
 }
 
 void monitor_setLocalData() {
-  static byte i = 1; 
+  static byte i = 5; 
 
   comm_t payload;
-  payload.key = 5;
+  payload.key = i;
   switch (i) {
     case NRF24_KEY_THROTTLE:
       payload.val = tx_payload.throttle; 
