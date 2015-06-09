@@ -53,7 +53,6 @@ typedef struct{
   uint16_t val;
 }
 ack_t;
-ack_t ack_payload;
 
 byte pipe_tx[6] = TX_ADDRESS;
 byte pipe_rx[6] = RX_ADDRESS;
@@ -192,7 +191,8 @@ void loop(void)
        
        if (radio.available() ){
           //unsigned long tim = micros();
-          memset(&ack_payload, 0, sizeof(tx_t));
+          ack_t ack_payload;
+          memset(&ack_payload, 0, sizeof(ack_t));
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
           
