@@ -187,14 +187,19 @@ void loop(void)
           memset(&ack_payload, 0, sizeof(tx_t));
           radio.read( &ack_payload, sizeof(ack_t) );
           ppsCounter++;
-
-          comm_t comm_payload;
-          comm_payload.key = ack_payload.key;
-          comm_payload.val = ack_payload.val;
-          comm_push(comm_payload);
-
-          if (DEBUG) {
-            printf("Got key %d, val: %d \n\r", ack_payload.key, ack_payload.val);
+          
+          // sanity check
+          if ( (ack_payload.key >= NRF24_KEY_VCC) && (ack_payload.key <= NRF24_KEY_ROLL)) {
+            comm_t comm_payload;
+            comm_payload.key = ack_payload.key;
+            comm_payload.val = ack_payload.val;
+            comm_push(comm_payload);
+  
+            if (DEBUG) {
+              printf("Got key %d, val: %d \n\r", ack_payload.key, ack_payload.val);
+            }
+          } else if (DEBUG) {
+            printf("Sanity failed: %d, val: %d \n\r", ack_payload.key, ack_payload.val);
           }
 
         }
