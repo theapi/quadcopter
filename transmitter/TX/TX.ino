@@ -26,8 +26,8 @@
 
 #define PIN_THROTTLE A0
 #define PIN_YAW      A1
-#define PIN_PITCH    A2
-#define PIN_ROLL     A3
+#define PIN_ROLL     A2
+#define PIN_PITCH    A3
 
 #define PIN_SWITCH_A 2 // (PD2 - PCINT18)
 #define PIN_SWITCH_B 3 // (PD3 - PCINT19)
@@ -135,13 +135,19 @@ void setup()
 // Returns a corrected value for a joystick position that takes into account
 // the values of the outer extents and the middle of the joystick range
 // and maps it to the range the RX expects.
-int joystickMapValues(int val, int lower, int middle, int upper)
+int joystickMapValues(int val, int lower, int middle, int upper, byte invert)
 {
   val = constrain(val, lower, upper);
-  if ( val < middle )
+  
+  if ( val < middle ) {
     val = map(val, lower, middle, 0, 499);
-  else
+  } else {
     val = map(val, middle, upper, 500, 1000);
+  }
+
+  if (invert) {
+    val = 1000 - val; 
+  }
   
   // RX expects values between 1000 & 2000
   return val + 1000; 
@@ -157,10 +163,10 @@ void loop(void)
   static unsigned long debounce_sample_last = 0;
  
   
-  throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
-  yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
-  pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
-  roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
+  throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000, 0);
+  yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 517, 1000, 0);
+  pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 513, 1023, 1);
+  roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 507, 1023, 1);
   
 
   if (DEBUG) {
