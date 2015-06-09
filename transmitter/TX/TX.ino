@@ -64,6 +64,11 @@ int pps = 0;
 int ppsLost = 0;
 int ppsLostCounter = 0;
 
+uint16_t throttle;
+uint16_t yaw;
+uint16_t pitch; 
+uint16_t roll; 
+
 uint8_t switches = 0; // bit flag
 
 void resetPayload() 
@@ -153,11 +158,11 @@ void loop(void)
   static unsigned long debounce_sample_last = 0;
  
   
-  tx_payload.throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
-  tx_payload.yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
-  tx_payload.pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
-  tx_payload.roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
-  tx_payload.switches = switches;
+  throttle = joystickMapValues(analogRead(PIN_THROTTLE), 125, 515, 1000);
+  yaw      = joystickMapValues(analogRead(PIN_YAW), 10, 521, 1000);
+  pitch    = joystickMapValues(analogRead(PIN_PITCH), 0, 511, 1023);
+  roll     = joystickMapValues(analogRead(PIN_ROLL), 0, 511, 1023);
+  
 
   if (DEBUG) {
     //printf("val: %d\n\r ",tx_payload.throttle);
@@ -166,8 +171,11 @@ void loop(void)
   // Stop listening so we can talk.
   radio.stopListening();                                  
         
-  // Take the time, and send it.  This will block until complete 
-  //unsigned long time = micros();  
+  tx_payload.throttle = throttle;
+  tx_payload.yaw = yaw;
+  tx_payload.pitch = pitch;
+  tx_payload.roll = roll;
+  tx_payload.switches = switches;
   if (!radio.write( &tx_payload, sizeof(tx_t))) {
     // Got no ack.
     if (DEBUG) {
@@ -274,22 +282,22 @@ void monitor_sendData()
 }
 
 void monitor_setLocalData() {
-  static byte i = 5; 
+  static uint8_t i = 5; 
 
   comm_t payload;
   payload.key = i;
   switch (i) {
     case NRF24_KEY_THROTTLE:
-      payload.val = tx_payload.throttle; 
+      payload.val = throttle; 
       break;
     case NRF24_KEY_YAW:
-      payload.val = tx_payload.yaw; 
+      payload.val = yaw; 
       break;
     case NRF24_KEY_PITCH:
-      payload.val = tx_payload.pitch; 
+      payload.val = pitch; 
       break;
     case NRF24_KEY_ROLL:
-      payload.val = tx_payload.roll; 
+      payload.val = roll; 
       break;
   } 
   
@@ -298,5 +306,6 @@ void monitor_setLocalData() {
   if (++i > 8) {
     i = 5; 
   }
+  
 }
 
