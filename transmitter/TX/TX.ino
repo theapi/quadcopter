@@ -10,13 +10,11 @@
  */
 
 #include <SPI.h>
-#include <EasyTransfer.h>
 #include "nRF24L01.h"
 #include "RF24.h"
 #include "printf.h"
 #include "comm.h"
 #include "def.h"
-
 
 #define DEBUG 0
 
@@ -56,9 +54,6 @@ typedef struct{
 }
 ack_t;
 
-EasyTransfer et; 
-comm_t et_data;
-
 byte pipe_tx[6] = TX_ADDRESS;
 byte pipe_rx[6] = RX_ADDRESS;
 
@@ -94,8 +89,6 @@ void setup()
   pinMode(PIN_SWITCH_E, INPUT_PULLUP);
   
   Serial.begin(115200);
-  //start the library, pass in the data details and the name of the serial port.
-  et.begin(details(et_data), &Serial);
   
   if (DEBUG) {
     
@@ -278,16 +271,10 @@ void loop(void)
 void monitor_sendData()
 {
   if (!DEBUG) {
-    //byte data[5];
+    byte data[5];
   
     while (!comm_empty()) {
       comm_t payload = comm_shift();
-      et_data.key = payload.key;
-      et_data.val = payload.val;
-      //send the data
-      et.sendData();
-  
-      /*
       data[0] = 'A';
       data[1] = payload.key;
       data[2] = (payload.val >> 8);
@@ -296,8 +283,6 @@ void monitor_sendData()
 
       Serial.write(data, 5);
       //Serial.flush();
-      */
-      
     }
   }
 }
