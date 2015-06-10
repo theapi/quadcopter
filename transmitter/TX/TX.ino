@@ -271,7 +271,7 @@ void loop(void)
 void monitor_sendData()
 {
   if (!DEBUG) {
-    byte data[5];
+    byte data[8];
   
     while (!comm_empty()) {
       comm_t payload = comm_shift();
@@ -279,9 +279,13 @@ void monitor_sendData()
       data[1] = payload.key;
       data[2] = (payload.val >> 8);
       data[3] = payload.val;
-      data[4] = 'K';
+      // repeat for data integrity
+      data[4] = data[1];
+      data[5] = data[2];
+      data[6] = data[3];
+      data[7] = 'K';
 
-      Serial.write(data, 5);
+      Serial.write(data, 8);
       //Serial.flush();
     }
   }

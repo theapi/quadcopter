@@ -84,7 +84,7 @@ void setup()
 void loop()
 {
   static byte ack_flag = 0;
-  static byte data[3];
+  static byte data[6];
   
   // http://www.labbookpages.co.uk/electronics/debounce.html
   static uint8_t debounce_switches[4] = {0xFF, 0xFF, 0xFF, 0xFF};
@@ -104,28 +104,52 @@ void loop()
         }
         break;
         
-      case 1:
+      case 1: // key
         ack_flag = 2; 
-        // this & the next 2 bytes are the data
         data[0] = c;
         break;
         
-      case 2:
+      case 2: // val high byte
         ack_flag = 3; 
         data[1] = c;
         break;
         
-      case 3:
+      case 3: // val low byte
         ack_flag = 4;
         data[2] = c; 
         break;
         
-      case 4:
+      case 4: // key (repeated)
+        ack_flag = 5; 
+        data[3] = c;
+        break;
+        
+      case 5: // val high byte (repeated)
+        ack_flag = 6; 
+        data[4] = c;
+        break;
+        
+      case 6: // val low byte (repeated)
+        ack_flag = 7;
+        data[5] = c; 
+        break;
+        
+      case 7:
         ack_flag = 0; 
         if (c == 'K') {
-          int val = (data[1] << 8) | data[2];
+          byte key = data[0];
+          byte key_copy = data[3];
+          if (key != key_copy) {
+            break;
+          }
           
-          switch (data[0]) {
+          int val = (data[1] << 8) | data[2];
+          int val_copy = (data[4] << 8) | data[5];
+          if (val != val_copy) {
+            break;
+          }
+          
+          switch (key) {
             case NRF24_KEY_PPS:
               monitor.pps = val;
               break;          

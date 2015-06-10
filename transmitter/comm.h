@@ -1,7 +1,7 @@
 #ifndef COMM_H_
 #define COMM_H_
 
-#define COMM_BUFFER_LEN 4
+#define COMM_BUFFER_LEN 6
 
 typedef struct{
   uint8_t key;
