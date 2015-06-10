@@ -1,6 +1,7 @@
 
 
 #include <Wire.h>
+#include <EasyTransfer.h>
 #include "U8glib.h"
 #include "comm.h"
 #include "def.h"
@@ -23,6 +24,9 @@ typedef struct{
 }
 monitor_t;
 monitor_t monitor;
+
+EasyTransfer et; 
+comm_t et_data;
 
 //U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE|U8G_I2C_OPT_DEV_0);
 U8GLIB_SSD1306_128X64_2X u8g(U8G_I2C_OPT_NONE);
@@ -67,6 +71,9 @@ void setup()
 {
   batterySetup();
   Serial.begin(115200);
+  //start the library, pass in the data details and the name of the serial port.
+  et.begin(details(et_data), &Serial);
+  
   u8g.setRot180();
   memset(&monitor, 0, sizeof(monitor_t));
   
@@ -83,15 +90,40 @@ void setup()
 
 void loop()
 {
-  static byte ack_flag = 0;
-  static byte data[3];
+  //static byte ack_flag = 0;
+  //static byte data[3];
   
   // http://www.labbookpages.co.uk/electronics/debounce.html
   static uint8_t debounce_switches[4] = {0xFF, 0xFF, 0xFF, 0xFF};
   static unsigned long debounce_sample_last = 0;
   
   unsigned long now = millis(); 
+
+  // check and see if a data packet has come in. 
+  if (et.receiveData()) {
+    switch (et_data.key) {
+      case NRF24_KEY_PPS:
+        monitor.pps = et_data.val;
+        break;          
+      case NRF24_KEY_VCC:
+        monitor.vcc_rx = et_data.val;
+        break;
+      case NRF24_KEY_THROTTLE:
+        monitor.throttle = et_data.val;
+        break;
+      case NRF24_KEY_YAW:
+        monitor.yaw = et_data.val;
+        break;
+      case NRF24_KEY_PITCH:
+        monitor.pitch = et_data.val;
+        break;
+      case NRF24_KEY_ROLL:
+        monitor.roll = et_data.val;
+        break;
+    }
+  }
   
+  /*
   while (Serial.available() > 0) {
     // Warn when monitor has lost comms with the TX.
     comms_last = now;
@@ -157,6 +189,7 @@ void loop()
     }
     
   }
+  */
   
   // Read the battery level
   if (now - vcc_last > 1000) {
@@ -165,6 +198,7 @@ void loop()
 
     // Running average
     vcc = vcc * 0.9 + batteryVcc() * 0.1;
+    monitor.vcc_tx = vcc;
   }
   
   // Change the display if there is no serial data from the transmitter
@@ -273,10 +307,10 @@ void draw(void) {
   u8g.setPrintPos(0, 0);
   u8g.print(monitor.throttle);
   u8g.setPrintPos(50, 0);
-  u8g.print(monitor.yaw);
+  u8g.print(monitor.pitch);
   
   u8g.setPrintPos(0, 20);
-  u8g.print(monitor.pitch);
+  u8g.print(monitor.yaw);
   u8g.setPrintPos(50, 20);
   u8g.print(monitor.roll);
   
